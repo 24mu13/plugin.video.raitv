@@ -3,31 +3,17 @@ import urllib2
 import json
 
 class RaiPlay:
-    # Raiplay android app
-    UserAgent = "Dalvik/1.6.0 (Linux; U; Android 4.2.2; GT-I9105P Build/JDQ39)"
-    MediapolisUserAgent = "Android 4.2.2 (smart) / RaiPlay 2.1.3 / WiFi"
-    
-    noThumbUrl = "http://www.rai.it/dl/components/img/imgPlaceholder.png"
-    
     # From http://www.raiplay.it/mobile/prod/config/RaiPlay_Config.json
-    baseUrl = "https://www.raiplay.it/"
+    baseUrl = "http://www.rai.it/"
     channelsUrl = "http://www.rai.it/dl/RaiPlay/2016/PublishingBlock-9a2ff311-fcf0-4539-8f8f-c4fee2a71d58.html?json"
     localizeUrl = "http://mediapolisgs.rai.it/relinker/relinkerServlet.htm?cont=201342"
     menuUrl = "http://www.rai.it/dl/RaiPlay/2016/menu/PublishingBlock-20b274b1-23ae-414f-b3bf-4bdc13b86af2.html?homejson"
-    palinsestoUrl = "https://www.raiplay.it/dl/palinsesti/Page-e120a813-1b92-4057-a214-15943d95aa68-json.html?canale=[nomeCanale]&giorno=[dd-mm-yyyy]"
+    palinsestoUrl = "http://www.rai.it/dl/palinsesti/Page-e120a813-1b92-4057-a214-15943d95aa68-json.html?canale=[nomeCanale]&giorno=[dd-mm-yyyy]"
     AzTvShowPath = "/dl/RaiTV/RaiPlayMobile/Prod/Config/programmiAZ-elenco.json"
-    
-    def __init__(self):
-        opener = urllib2.build_opener()
-        # Set User-Agent
-        opener.addheaders = [('User-Agent', self.UserAgent)]
-        urllib2.install_opener(opener)
+    noThumbUrl = "http://www.rai.it/cropgd/256x144/dl/components/img/imgPlaceholder.png"
     
     def getCountry(self):
-        try:
-            response = urllib2.urlopen(self.localizeUrl).read()
-        except urllib2.HTTPError:
-            response = "ERROR"
+        response = urllib2.urlopen(self.localizeUrl).read()
         return response
         
     def getChannels(self):
@@ -63,18 +49,19 @@ class RaiPlay:
     def getProgramme(self, pathId):
         url = self.getUrl(pathId)
         response = json.load(urllib2.urlopen(url))
-        return response
-        
+        return response["Blocks"]
+    
     def getContentSet(self, url):
         url = self.getUrl(url)
         response = json.load(urllib2.urlopen(url))
         return response["items"]
     
-    def getVideoMetadata(self, pathId):
+    def getVideoUrl(self, pathId):
         url = self.getUrl(pathId)
         response = json.load(urllib2.urlopen(url))
-        return response["video"]
-    
+        url = response["video"]["contentUrl"]
+        return url
+
     def getUrl(self, pathId):
         pathId = pathId.replace(" ", "%20")
         if pathId[0:2] == "//":
@@ -92,4 +79,4 @@ class RaiPlay:
             url = self.getUrl(pathId)
             url = url.replace("[RESOLUTION]", "256x-")
         return url
- 
+        
