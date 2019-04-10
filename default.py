@@ -18,7 +18,7 @@ import resources.lib.utils as utils
 
 # plugin constants
 __plugin__ = "plugin.video.raitv"
-__author__ = "Nightflyer"
+__author__ = "Nightflyer, 24mu13"
 
 Addon = xbmcaddon.Addon(id=__plugin__)
 
@@ -48,22 +48,27 @@ def addLinkItem(parameters, li, url=""):
         listitem=li, isFolder=False)
 
 # UI builder functions
-def show_root_menu():
+def show_root_menu(content_type=""):
     ''' Show the plugin root menu '''
-    liStyle = xbmcgui.ListItem("Dirette TV")
-    addDirectoryItem({"mode": "live_tv"}, liStyle)
-    liStyle = xbmcgui.ListItem("Dirette Radio")
-    addDirectoryItem({"mode": "live_radio"}, liStyle)
-    liStyle = xbmcgui.ListItem("Replay")
-    addDirectoryItem({"mode": "replay"}, liStyle)
-    liStyle = xbmcgui.ListItem("Programmi On Demand")
-    addDirectoryItem({"mode": "ondemand"}, liStyle)
-    liStyle = xbmcgui.ListItem("Archivio Telegiornali")
-    addDirectoryItem({"mode": "tg"}, liStyle)
-    liStyle = xbmcgui.ListItem("Videonotizie")
-    addDirectoryItem({"mode": "news"}, liStyle)
-    liStyle = xbmcgui.ListItem("Aree tematiche")
-    addDirectoryItem({"mode": "themes"}, liStyle)
+
+    if (content_type == "audio"):
+        liStyle = xbmcgui.ListItem("Dirette Radio")
+        addDirectoryItem({"mode": "live_radio"}, liStyle)
+
+    elif (content_type == "video"):
+        liStyle = xbmcgui.ListItem("Dirette TV")
+        addDirectoryItem({"mode": "live_tv"}, liStyle)
+        liStyle = xbmcgui.ListItem("Replay")
+        addDirectoryItem({"mode": "replay"}, liStyle)
+        liStyle = xbmcgui.ListItem("Programmi On Demand")
+        addDirectoryItem({"mode": "ondemand"}, liStyle)
+        liStyle = xbmcgui.ListItem("Archivio Telegiornali")
+        addDirectoryItem({"mode": "tg"}, liStyle)
+        liStyle = xbmcgui.ListItem("Videonotizie")
+        addDirectoryItem({"mode": "news"}, liStyle)
+        liStyle = xbmcgui.ListItem("Aree tematiche")
+        addDirectoryItem({"mode": "themes"}, liStyle)
+
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_tg_root():
@@ -128,7 +133,7 @@ def play(url, pathId=""):
         
     # Add the server to the URL if missing
     if url !="" and url.find("://") == -1:
-        url = raiplay.baseUrl + url
+        url = raiplay.getBaseURL() + url
     xbmc.log("Media URL: " + url)
 
     # It seems that all .ram files I found are not working
@@ -143,10 +148,12 @@ def play(url, pathId=""):
     xbmcplugin.setResolvedUrl(handle=handle, succeeded=True, listitem=item)
 
 def show_tv_channels():
+    xbmc.log("Show TV channels")
     raiplay = RaiPlay()
     for station in tv_stations:
         liStyle = xbmcgui.ListItem(station["channel"], thumbnailImage=raiplay.getThumbnailUrl(station["transparent-icon"]))
         liStyle.setProperty('IsPlayable', 'true')
+        liStyle.setInfo('video', {'title': station["channel"]})
         addLinkItem({"mode": "play",
             "url": station["video"]["contentUrl"]}, liStyle)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -219,6 +226,7 @@ def show_replay_epg(channelId, date):
             liStyle = xbmcgui.ListItem(startTime + " " + title,
                 thumbnailImage=thumb)
             liStyle.setProperty('IsPlayable', 'true')
+            liStyle.setInfo('video', {'title': title})
             addLinkItem({"mode": "play",
                 "path_id": videoUrl}, liStyle)
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
@@ -356,7 +364,6 @@ def log_country():
 
 # parameter values
 params = parameters_string_to_dict(sys.argv[2])
-# TODO: support content_type parameter, provided by XBMC Frodo.
 content_type = str(params.get("content_type", ""))
 mode = str(params.get("mode", ""))
 behaviour = str(params.get("behaviour", ""))
@@ -427,5 +434,5 @@ elif mode == "play":
 
 else:
     log_country()
-    show_root_menu()
+    show_root_menu(content_type)
 
