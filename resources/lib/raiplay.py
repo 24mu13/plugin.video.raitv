@@ -3,11 +3,11 @@ import urllib2
 import json
 
 BASE_URL      = 'http://www.rai.it'
+#TODO get all following URLs from http://www.raiplay.it/mobile/prod/config/RaiPlay_Config.json
 GUIDE_URL     = BASE_URL + '/dl/palinsesti/Page-e120a813-1b92-4057-a214-15943d95aa68-json.html?canale={channel}&giorno={day}' # mm-dd-yyyy
+CHANNELS_URL  = BASE_URL + '/dl/RaiPlay/2016/PublishingBlock-9a2ff311-fcf0-4539-8f8f-c4fee2a71d58.html?json'
 
-class RaiPlay:
-    # From http://www.raiplay.it/mobile/prod/config/RaiPlay_Config.json
-    channelsUrl = "http://www.rai.it/dl/RaiPlay/2016/PublishingBlock-9a2ff311-fcf0-4539-8f8f-c4fee2a71d58.html?json"
+class RaiPlay(object):
     localizeUrl = "http://mediapolisgs.rai.it/relinker/relinkerServlet.htm?cont=201342"
     menuUrl = "http://www.rai.it/dl/RaiPlay/2016/menu/PublishingBlock-20b274b1-23ae-414f-b3bf-4bdc13b86af2.html?homejson"
     AzTvShowPath = "/dl/RaiTV/RaiPlayMobile/Prod/Config/programmiAZ-elenco.json"
@@ -21,7 +21,7 @@ class RaiPlay:
         return response
         
     def getChannels(self):
-        response = json.load(urllib2.urlopen(self.channelsUrl))
+        response = json.load(urllib2.urlopen(CHANNELS_URL))
         return response["dirette"]
         
     def getProgrammes(self, channelName, epgDate):
@@ -83,4 +83,3 @@ class RaiPlay:
             url = self.getUrl(pathId)
             url = url.replace("[RESOLUTION]", "256x-")
         return url
-        

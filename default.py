@@ -12,8 +12,9 @@ import StorageServer
 from resources.lib.tgr import TGR
 from resources.lib.search import Search
 from resources.lib.raiplay import RaiPlay
-from resources.lib.radiorai import RadioRai
+from resources.lib.radiorai import RadioRai # RaiPlayRadio
 from resources.lib.relinker import Relinker
+from resources.lib.utils import log
 import resources.lib.utils as utils
 
 # plugin constants
@@ -26,7 +27,7 @@ Addon = xbmcaddon.Addon(id=__plugin__)
 handle = int(sys.argv[1])
 
 # Cache channels for 1 hour
-cache = StorageServer.StorageServer("plugin.video.raitv", 1) # (Your plugin name, Cache time in hours)
+cache = StorageServer.StorageServer("plugin.video.raitv", 1)
 tv_stations = cache.cacheFunction(RaiPlay().getChannels)
 radio_stations = cache.cacheFunction(RadioRai().getChannels)
 
@@ -116,10 +117,10 @@ def show_tgr_list(mode, url):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def play(url, pathId=""):
-    xbmc.log("Playing...")
+    log("Playing...")
         
     if pathId != "":
-        xbmc.log("PathID: " + pathId)
+        log("PathID: " + pathId)
         raiplay = RaiPlay()
         url = raiplay.getVideoUrl(pathId)
 
@@ -127,14 +128,14 @@ def play(url, pathId=""):
     if url[:53] == "http://mediapolis.rai.it/relinker/relinkerServlet.htm" or \
         url[:56] == "http://mediapolisvod.rai.it/relinker/relinkerServlet.htm" or \
         url[:58] == "http://mediapolisevent.rai.it/relinker/relinkerServlet.htm":
-        xbmc.log("Relinker URL: " + url)
+        log("Relinker URL: " + url)
         relinker = Relinker()
         url = relinker.getURL(url)
         
     # Add the server to the URL if missing
     if url !="" and url.find("://") == -1:
         url = raiplay.getBaseURL() + url
-    xbmc.log("Media URL: " + url)
+    log("Media URL: " + url)
 
     # It seems that all .ram files I found are not working
     # because upstream file is no longer present
@@ -148,7 +149,7 @@ def play(url, pathId=""):
     xbmcplugin.setResolvedUrl(handle=handle, succeeded=True, listitem=item)
 
 def show_tv_channels():
-    xbmc.log("Show TV channels")
+    log("Show TV channels")
     raiplay = RaiPlay()
     for station in tv_stations:
         liStyle = xbmcgui.ListItem(station["channel"], thumbnailImage=raiplay.getThumbnailUrl(station["transparent-icon"]))
@@ -191,7 +192,7 @@ def show_replay_channels(date):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_replay_epg(channelId, date):
-    xbmc.log("Showing EPG for " + channelId + " on " + date)
+    log("Showing EPG for " + channelId + " on " + date)
     raiplay = RaiPlay()
     programmes = raiplay.getProgrammes(channelId, date)
     
@@ -243,12 +244,12 @@ def show_ondemand_root():
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
     
 def show_ondemand_programmes(pathId):
-    xbmc.log("PathID: " + pathId)
+    log("PathID: " + pathId)
     raiplay = RaiPlay()
     blocchi = raiplay.getCategory(pathId)
 
     if len(blocchi) > 1:
-        xbmc.log("Blocchi: " + str(len(blocchi)))
+        log("Blocchi: " + str(len(blocchi)))
         
     for item in blocchi[0]["lanci"]:
         liStyle = xbmcgui.ListItem(item["name"], thumbnailImage=raiplay.getThumbnailUrl(item["images"]["landscape"]))
@@ -256,7 +257,7 @@ def show_ondemand_programmes(pathId):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_ondemand_list(pathId):
-    xbmc.log("PathID: " + pathId)
+    log("PathID: " + pathId)
     liStyle = xbmcgui.ListItem("0-9")
     addDirectoryItem({"mode": "ondemand_list", "index": "0-9", "path_id": pathId}, liStyle)
     for i in range(26):
@@ -265,8 +266,8 @@ def show_ondemand_list(pathId):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_ondemand_index(index, pathId):
-    xbmc.log("PathID: " + pathId)
-    xbmc.log("Index: " + index)
+    log("PathID: " + pathId)
+    log("Index: " + index)
     raiplay = RaiPlay()
     dir = raiplay.getProgrammeList(pathId)
     for item in dir[index]:
@@ -276,7 +277,7 @@ def show_ondemand_index(index, pathId):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_ondemand_programme(pathId):
-    xbmc.log("PathID: " + pathId)
+    log("PathID: " + pathId)
     raiplay = RaiPlay()
     blocks = raiplay.getProgramme(pathId)
     for block in blocks:
@@ -286,7 +287,7 @@ def show_ondemand_programme(pathId):
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
 
 def show_ondemand_items(url):
-    xbmc.log("ContentSet URL: " + url)
+    log("ContentSet URL: " + url)
     raiplay = RaiPlay()
     items = raiplay.getContentSet(url)
     for item in items:
@@ -305,7 +306,7 @@ def search_ondemand_programmes():
     kb.doModal()
     if kb.isConfirmed():
         name = kb.getText().decode('utf8')
-        xbmc.log("Searching for programme: " + name)
+        log("Searching for programme: " + name)
         raiplay = RaiPlay()
         dir = raiplay.getProgrammeList(raiplay.AzTvShowPath)
         for letter in dir:
@@ -335,13 +336,13 @@ def show_themes():
     xbmcplugin.endOfDirectory(handle=handle, succeeded=True)
     
 def get_last_content_by_tag(tags):
-    xbmc.log("Get latest content for tags: " + tags)
+    log("Get latest content for tags: " + tags)
     search = Search()
     items = search.getLastContentByTag(tags)
     show_search_result(items)
 
 def get_most_visited(tags):
-    xbmc.log("Get most visited for tags: " + tags)
+    log("Get most visited for tags: " + tags)
     search = Search()
     items = search.getMostVisited(tags)
     show_search_result(items)
@@ -360,7 +361,7 @@ def show_search_result(items):
 def log_country():
     raiplay = RaiPlay()
     country = raiplay.getCountry()
-    xbmc.log("RAI geolocation: %s" % country)
+    log("RAI geolocation: %s" % country)
 
 # parameter values
 params = parameters_string_to_dict(sys.argv[2])
@@ -403,7 +404,7 @@ elif mode == "ondemand":
     elif subType == "PLR programma Page":
         show_ondemand_programme(pathId)
     else:
-        xbmc.log("Unhandled sub-type: " + subType)
+        log("Unhandled sub-type: " + subType)
 elif mode == "ondemand_list":
         show_ondemand_index(index, pathId)
 elif mode == "ondemand_items":
