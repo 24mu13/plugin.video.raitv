@@ -363,6 +363,14 @@ def log_country():
     country = raiplay.getCountry()
     log("RAI geolocation: %s" % country)
 
+if __name__ == '__main__':
+    content_type = str(params.get('content_type', ''))
+    if content_type == 'video':
+        raiplay.RaiPlay(sys.argv).run()
+    #elif content_type == 'audio':
+    #    raiplayradio.RaiPlayRadio(sys.argv).run()
+
+
 # parameter values
 params = parameters_string_to_dict(sys.argv[2])
 content_type = str(params.get("content_type", ""))
