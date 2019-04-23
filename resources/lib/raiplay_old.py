@@ -1,10 +1,9 @@
 ﻿# -*- coding: utf-8 -*-
-import json, urlparse, urllib, urllib2
-from simplecache import SimpleCache, use_cache
-import xbmc, xbmcgui, xbmcplugin
-
-from relinker import Relinker
+import urllib2
+import json
+import urlparse
 from utils import log
+import xbmc, xbmcplugin
 
 BASE_URL      = 'http://www.rai.it'
 #TODO get all following URLs from http://www.raiplay.it/mobile/prod/config/RaiPlay_Config.json
@@ -12,23 +11,93 @@ GUIDE_URL     = BASE_URL + '/dl/palinsesti/Page-e120a813-1b92-4057-a214-15943d95
 CHANNELS_URL  = BASE_URL + '/dl/RaiPlay/2016/PublishingBlock-9a2ff311-fcf0-4539-8f8f-c4fee2a71d58.html?json'
 NO_LOGO_URL   = BASE_URL + '/cropgd/256x144/dl/components/img/imgPlaceholder.png'
 
-CONTENT_TYPE  = 'episodes'
 MAIN_MENU     = [('Dirette',            '' , 1),
                  ('Guida TV / Replay',  '' , 2),
-                 ('Programmi (TODO)',   '' , 3)]
+                 ('Programmi',          '' , 3)]
 
-class RaiPlay(object):   
+class RaiPlay(object):
+    localizeUrl = "http://mediapolisgs.rai.it/relinker/relinkerServlet.htm?cont=201342"
+    menuUrl = "http://www.rai.it/dl/RaiPlay/2016/menu/PublishingBlock-20b274b1-23ae-414f-b3bf-4bdc13b86af2.html?homejson"
+    AzTvShowPath = "/dl/RaiTV/RaiPlayMobile/Prod/Config/programmiAZ-elenco.json"
+    
     def __init__(self, sysARG):
         log('__init__')
         self.sysARG  = sysARG
         self.cache   = SimpleCache()
         self.channels   = self.getChannels()
 
+    def getBaseURL(self):
+        return BASE_URL
+
+    def getCountry(self):
+        response = urllib2.urlopen(self.localizeUrl).read()
+        return response
+        
     @use_cache(1)
     def getChannels(self):
         response = json.load(urllib2.urlopen(CHANNELS_URL))
         return response["dirette"]
         
+    def getProgrammes(self, channelName, epgDate):
+        channelTag = channelName.replace(" ", "")
+        #url = url.replace("[nomeCanale]", channelTag)
+        #url = url.replace("[dd-mm-yyyy]", epgDate)
+        url = GUIDE_URL.format(channel=channelTag, day=epgDate)
+        response = json.load(urllib2.urlopen(url))
+        return response[channelName][0]["palinsesto"][0]["programmi"]
+        
+    def getMainMenu(self):
+        response = json.load(urllib2.urlopen(self.menuUrl))
+        return response["menu"]
+
+    # RaiPlay Genere Page
+    # RaiPlay Tipologia Page
+    def getCategory(self, pathId):
+        url = self.getUrl(pathId)
+        response = json.load(urllib2.urlopen(url))
+        return response["blocchi"]
+  
+    # Raiplay Tipologia Item
+    def getProgrammeList(self, pathId):
+        url = self.getUrl(pathId)
+        response = json.load(urllib2.urlopen(url))
+        return response
+    
+    #  PLR programma Page
+    def getProgramme(self, pathId):
+        url = self.getUrl(pathId)
+        response = json.load(urllib2.urlopen(url))
+        return response["Blocks"]
+    
+    def getContentSet(self, url):
+        url = self.getUrl(url)
+        response = json.load(urllib2.urlopen(url))
+        return response["items"]
+    
+    def getVideoUrl(self, pathId):
+        url = self.getUrl(pathId)
+        response = json.load(urllib2.urlopen(url))
+        url = response["video"]["contentUrl"]
+        return url
+
+    def getUrl(self, pathId):
+        pathId = pathId.replace(" ", "%20")
+        if pathId[0:2] == "//":
+            url = "http:" + pathId
+        elif pathId[0] == "/":
+            url = BASE_URL + pathId
+        else:
+            url = pathId
+        return url
+        
+    def getThumbnailUrl(self, pathId):
+        if pathId == "":
+            url = NO_LOGO_URL
+        else:
+            url = self.getUrl(pathId)
+            url = url.replace("[RESOLUTION]", "256x-")
+        return url
+
     def getParams(self):
         return dict(urlparse.parse_qsl(self.sysARG[2][1:]))
 
@@ -39,8 +108,8 @@ class RaiPlay(object):
         liz.setProperty('IsPlayable', 'false')
         if infoList == False: liz.setInfo(type="Video", infoLabels={"mediatype":"video","label":name,"title":name})
         else: liz.setInfo(type="Video", infoLabels=infoList)
-        #if infoArt == False: liz.setArt({'thumb':ICON,'fanart':FANART})
-        #else: liz.setArt(infoArt)
+        if infoArt == False: liz.setArt({'thumb':ICON,'fanart':FANART})
+        else: liz.setArt(infoArt)
         u=self.sysARG[0]+"?url="+urllib.quote_plus(u)+"&mode="+str(mode)+"&name="+urllib.quote_plus(name)
         xbmcplugin.addDirectoryItem(handle=int(self.sysARG[1]),url=u,listitem=liz,isFolder=True)
 
@@ -66,7 +135,7 @@ class RaiPlay(object):
         for channel in self.channels:
             chname = channel["channel"]
             chlogo = NO_LOGO_URL
-            if channel["transparent-icon"]:
+            if (channel["transparent-icon"])
                 chlogo = channel["transparent-icon"].replace("[RESOLUTION]", "256x-")
             thumb  = chlogo
             genre  = 'Live'
@@ -76,37 +145,6 @@ class RaiPlay(object):
             self.addLink(label, link, 9, infoLabels, infoArt, len(self.channels))
         xbmcplugin.addSortMethod(int(self.sysARG[1]) , xbmcplugin.SORT_METHOD_NONE)
  
-    def playVideo(self, name, url, liz=None):
-        log('playVideo')
-        #if pathId != "":
-        #    log("PathID: " + pathId)
-        #    raiplay = RaiPlay()
-        #    url = raiplay.getVideoUrl(pathId)
-
-        # Handle RAI relinker
-        if url[:53] == "http://mediapolis.rai.it/relinker/relinkerServlet.htm" or \
-            url[:56] == "http://mediapolisvod.rai.it/relinker/relinkerServlet.htm" or \
-            url[:58] == "http://mediapolisevent.rai.it/relinker/relinkerServlet.htm":
-            log("Relinker URL: " + url)
-            relinker = Relinker()
-            url = relinker.getURL(url)
-            
-        # Add the server to the URL if missing
-        if url !="" and url.find("://") == -1:
-            url = raiplay.getBaseURL() + url
-        log("Media URL: " + url)
-
-        # It seems that all .ram files I found are not working
-        # because upstream file is no longer present
-        if url[-4:].lower() == ".ram":
-            dialog = xbmcgui.Dialog()
-            dialog.ok("Errore", "I file RealAudio (.ram) non sono supportati.")
-            return
-        
-        # Play the item
-        item=xbmcgui.ListItem(path=url + '|User-Agent=' + urllib.quote_plus(Relinker.UserAgent))
-        xbmcplugin.setResolvedUrl(handle=handle, succeeded=True, listitem=item)
-
     def run(self):  
         params=self.getParams()
         try: url=urllib.unquote_plus(params["url"])
